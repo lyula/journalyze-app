@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, Platform } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, Platform, FlatList, Image, Modal } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { styled } from 'dripsy';
 import DateTimePicker from '@react-native-community/datetimepicker';
@@ -7,6 +7,84 @@ import { Picker } from '@react-native-picker/picker';
 
 const PRIMARY = '#a99d6b';
 const PRIMARY_BLUE = '#1E3A8A';
+
+function CountryAutocomplete({ value, setValue }) {
+  const [countries, setCountries] = useState([]);
+  const [query, setQuery] = useState(value || '');
+  const [showList, setShowList] = useState(false);
+  const [selectedFlag, setSelectedFlag] = useState(null);
+
+  useEffect(() => {
+    fetch('https://restcountries.com/v3.1/all?fields=name,cca2,flags')
+      .then(res => res.json())
+      .then(data => {
+        const countryList = data.map(c => ({
+          name: c.name.common,
+          code: c.cca2,
+          flag: c.flags && c.flags.png ? c.flags.png : '',
+        })).sort((a, b) => a.name.localeCompare(b.name));
+        setCountries(countryList);
+      });
+  }, []);
+
+  useEffect(() => {
+    // When value changes externally, update query and flag
+    setQuery(value || '');
+    const match = countries.find(c => c.name === value);
+    setSelectedFlag(match ? match.flag : null);
+  }, [value, countries]);
+
+  const filtered = countries.filter(c => c.name.toLowerCase().includes(query.toLowerCase()));
+
+  return (
+    <View style={{ width: '100%', marginBottom: 16 }}>
+      <View style={{ flexDirection: 'row', alignItems: 'center', borderWidth: 1, borderColor: PRIMARY, borderRadius: 8, backgroundColor: '#f9fafb', paddingHorizontal: 8, paddingVertical: 6 }}>
+        {selectedFlag && filtered.length === 1 && filtered[0].name === query ? (
+          <Image source={{ uri: selectedFlag }} style={{ width: 24, height: 16, marginRight: 8, borderRadius: 2 }} />
+        ) : null}
+        <TextInput
+          style={{ flex: 1, fontSize: 16, color: '#222' }}
+          placeholder="Country"
+          value={query}
+          onChangeText={text => {
+            setQuery(text);
+            setValue(text); // Always update value to match query
+            setShowList(true);
+          }}
+          placeholderTextColor="#b3b3b3"
+          autoCapitalize="words"
+          onFocus={() => setShowList(true)}
+          onBlur={() => setTimeout(() => setShowList(false), 150)}
+        />
+      </View>
+      {showList && (
+        <View style={{ position: 'absolute', top: 48, left: 0, right: 0, backgroundColor: '#fff', borderRadius: 8, maxHeight: 220, borderWidth: 1, borderColor: '#ccc', zIndex: 10, shadowColor: '#000', shadowOpacity: 0.08, shadowRadius: 8, elevation: 4 }}>
+          <FlatList
+            data={filtered}
+            keyExtractor={item => item.code}
+            renderItem={({ item }) => (
+              <TouchableOpacity
+                style={{ flexDirection: 'row', alignItems: 'center', padding: 12, borderBottomWidth: 1, borderBottomColor: '#eee' }}
+                onPress={() => {
+                  setValue(item.name);
+                  setQuery(item.name);
+                  setSelectedFlag(item.flag);
+                  setShowList(false);
+                }}
+              >
+                {item.flag && <Image source={{ uri: item.flag }} style={{ width: 24, height: 16, marginRight: 8, borderRadius: 2 }} />}
+                <Text style={{ fontSize: 16 }}>{item.name}</Text>
+              </TouchableOpacity>
+            )}
+            ListEmptyComponent={<Text style={{ padding: 12, color: '#888' }}>No countries found</Text>}
+            keyboardShouldPersistTaps="handled"
+            style={{ maxHeight: 220 }}
+          />
+        </View>
+      )}
+    </View>
+  );
+}
 
 const Container = styled(SafeAreaView)({
   flex: 1,
@@ -38,6 +116,7 @@ const Button = styled(TouchableOpacity)({
   alignItems: 'center',
   marginTop: 8,
 });
+
 
 const GenderButton = styled(TouchableOpacity)(({ selected }) => ({
   flex: 1,
@@ -96,23 +175,8 @@ export default function RegisterScreen() {
         keyboardType="email-address"
         placeholderTextColor="#b3b3b3"
       />
-      <Input
-        placeholder="Password"
-        value={password}
-        onChangeText={setPassword}
-        secureTextEntry
-        placeholderTextColor="#b3b3b3"
-      />
-      <Input
-        placeholder="Confirm Password"
-        value={confirm}
-        onChangeText={setConfirm}
-        secureTextEntry
-        placeholderTextColor="#b3b3b3"
-      />
       <View style={{ width: '100%', marginBottom: 16 }}>
-        <Text style={{ marginBottom: 6, color: '#222', fontWeight: 'bold' }}>Gender</Text>
-        <View style={{ borderWidth: 1, borderColor: PRIMARY, borderRadius: 8, backgroundColor: '#f9fafb' }}>
+        <View style={{ borderWidth: 1, borderColor: PRIMARY, borderRadius: 8, backgroundColor: '#f9fafb', paddingHorizontal: 8, paddingVertical: 2 }}>
           <Picker
             selectedValue={gender}
             onValueChange={(itemValue) => setGender(itemValue)}
@@ -142,11 +206,22 @@ export default function RegisterScreen() {
           maximumDate={new Date()}
         />
       )}
-      <Input
-        placeholder="Country"
+      <CountryAutocomplete
         value={country}
-        onChangeText={setCountry}
-        autoCapitalize="words"
+        setValue={setCountry}
+      />
+      <Input
+        placeholder="Password"
+        value={password}
+        onChangeText={setPassword}
+        secureTextEntry
+        placeholderTextColor="#b3b3b3"
+      />
+      <Input
+        placeholder="Confirm Password"
+        value={confirm}
+        onChangeText={setConfirm}
+        secureTextEntry
         placeholderTextColor="#b3b3b3"
       />
       {error ? (
