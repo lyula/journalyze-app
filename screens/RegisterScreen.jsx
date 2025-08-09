@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, Platform, FlatList, Image, Modal } from 'react-native';
+import Checkbox from 'expo-checkbox';
 import { useNavigation } from '@react-navigation/native';
 import { styled } from 'dripsy';
 import DateTimePicker from '@react-native-community/datetimepicker';
@@ -8,10 +9,9 @@ import { Picker } from '@react-native-picker/picker';
 const PRIMARY = '#a99d6b';
 const PRIMARY_BLUE = '#1E3A8A';
 
-function CountryAutocomplete({ value, setValue }) {
+function CountryAutocomplete({ value, setValue, showList, setShowList }) {
   const [countries, setCountries] = useState([]);
   const [query, setQuery] = useState(value || '');
-  const [showList, setShowList] = useState(false);
   const [selectedFlag, setSelectedFlag] = useState(null);
 
   useEffect(() => {
@@ -37,7 +37,7 @@ function CountryAutocomplete({ value, setValue }) {
   const filtered = countries.filter(c => c.name.toLowerCase().includes(query.toLowerCase()));
 
   return (
-    <View style={{ width: '100%', marginBottom: 16 }}>
+    <View style={{ width: '100%', marginBottom: 16, zIndex: 20 }}>
       <View style={{ flexDirection: 'row', alignItems: 'center', borderWidth: 1, borderColor: PRIMARY, borderRadius: 8, backgroundColor: '#f9fafb', paddingHorizontal: 8, paddingVertical: 6 }}>
         {selectedFlag && filtered.length === 1 && filtered[0].name === query ? (
           <Image source={{ uri: selectedFlag }} style={{ width: 24, height: 16, marginRight: 8, borderRadius: 2 }} />
@@ -58,7 +58,7 @@ function CountryAutocomplete({ value, setValue }) {
         />
       </View>
       {showList && (
-        <View style={{ position: 'absolute', top: 48, left: 0, right: 0, backgroundColor: '#fff', borderRadius: 8, maxHeight: 220, borderWidth: 1, borderColor: '#ccc', zIndex: 10, shadowColor: '#000', shadowOpacity: 0.08, shadowRadius: 8, elevation: 4 }}>
+        <View style={{ position: 'absolute', top: 48, left: 0, right: 0, backgroundColor: '#fff', borderRadius: 8, borderWidth: 1, borderColor: '#ccc', zIndex: 10, shadowColor: '#000', shadowOpacity: 0.08, shadowRadius: 8, elevation: 4, overflow: 'hidden', height: 220, flex: 1 }}>
           <FlatList
             data={filtered}
             keyExtractor={item => item.code}
@@ -77,8 +77,8 @@ function CountryAutocomplete({ value, setValue }) {
               </TouchableOpacity>
             )}
             ListEmptyComponent={<Text style={{ padding: 12, color: '#888' }}>No countries found</Text>}
-            keyboardShouldPersistTaps="handled"
-            style={{ maxHeight: 220 }}
+            keyboardShouldPersistTaps="always"
+            style={{ height: 220, flex: 1 }}
           />
         </View>
       )}
@@ -130,6 +130,7 @@ const GenderButton = styled(TouchableOpacity)(({ selected }) => ({
 }));
 
 export default function RegisterScreen() {
+  const [acceptedTerms, setAcceptedTerms] = useState(false);
   const navigation = useNavigation();
   const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
@@ -139,6 +140,7 @@ export default function RegisterScreen() {
   const [dob, setDob] = useState(null);
   const [showDate, setShowDate] = useState(false);
   const [country, setCountry] = useState('');
+  const [showCountryList, setShowCountryList] = useState(false);
   const [error, setError] = useState('');
 
   const handleRegister = () => {
@@ -149,6 +151,10 @@ export default function RegisterScreen() {
     }
     if (password !== confirm) {
       setError('Passwords do not match.');
+      return;
+    }
+    if (!acceptedTerms) {
+      setError('You must accept the Terms and Conditions.');
       return;
     }
     setError('');
@@ -166,6 +172,7 @@ export default function RegisterScreen() {
         onChangeText={setUsername}
         autoCapitalize="none"
         placeholderTextColor="#b3b3b3"
+        onFocus={() => setShowCountryList(false)}
       />
       <Input
         placeholder="Email"
@@ -174,6 +181,7 @@ export default function RegisterScreen() {
         autoCapitalize="none"
         keyboardType="email-address"
         placeholderTextColor="#b3b3b3"
+        onFocus={() => setShowCountryList(false)}
       />
       <View style={{ width: '100%', marginBottom: 16 }}>
         <View style={{ borderWidth: 1, borderColor: PRIMARY, borderRadius: 8, backgroundColor: '#f9fafb', paddingHorizontal: 8, paddingVertical: 2 }}>
@@ -181,6 +189,7 @@ export default function RegisterScreen() {
             selectedValue={gender}
             onValueChange={(itemValue) => setGender(itemValue)}
             style={{ width: '100%' }}
+            onFocus={() => setShowCountryList(false)}
           >
             <Picker.Item label="Select gender" value="" color="#b3b3b3" />
             <Picker.Item label="Male" value="male" />
@@ -189,7 +198,7 @@ export default function RegisterScreen() {
           </Picker>
         </View>
       </View>
-      <TouchableOpacity style={styles.dobBtn} onPress={() => setShowDate(true)}>
+      <TouchableOpacity style={styles.dobBtn} onPress={() => { setShowDate(true); setShowCountryList(false); }}>
         <Text style={{ color: dob ? '#222' : '#b3b3b3', fontSize: 16 }}>
           {dob ? dob.toLocaleDateString() : 'Date of Birth'}
         </Text>
@@ -209,6 +218,8 @@ export default function RegisterScreen() {
       <CountryAutocomplete
         value={country}
         setValue={setCountry}
+        showList={showCountryList}
+        setShowList={setShowCountryList}
       />
       <Input
         placeholder="Password"
@@ -216,6 +227,7 @@ export default function RegisterScreen() {
         onChangeText={setPassword}
         secureTextEntry
         placeholderTextColor="#b3b3b3"
+        onFocus={() => setShowCountryList(false)}
       />
       <Input
         placeholder="Confirm Password"
@@ -223,7 +235,25 @@ export default function RegisterScreen() {
         onChangeText={setConfirm}
         secureTextEntry
         placeholderTextColor="#b3b3b3"
+        onFocus={() => setShowCountryList(false)}
       />
+      <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 12, marginTop: 4 }}>
+        <Checkbox
+          value={acceptedTerms}
+          onValueChange={setAcceptedTerms}
+          color={acceptedTerms ? PRIMARY : undefined}
+          style={{ marginRight: 8 }}
+        />
+        <Text style={{ color: '#222', flex: 1, fontSize: 15 }}>
+          I accept the{' '}
+          <Text
+            style={{ color: PRIMARY_BLUE, textDecorationLine: 'underline' }}
+            onPress={() => navigation.navigate('Terms')}
+          >
+            Terms and Conditions
+          </Text>
+        </Text>
+      </View>
       {error ? (
         <Text style={{ color: 'red', marginBottom: 8, marginTop: 8, textAlign: 'center' }}>{error}</Text>
       ) : null}
