@@ -4,6 +4,7 @@ import { View, Text, TextInput, Button, ScrollView } from 'react-native';
 import { styled } from 'dripsy';
 import FeedHeader from '../components/FeedHeader.jsx';
 import MainHeader from '../components/MainHeader.jsx';
+import Sidebar from '../components/Sidebar.jsx';
 
 const Container = styled(ScrollView)({
   flex: 1,
@@ -24,6 +25,7 @@ const Input = styled(TextInput)({
 export default function PostScreen({ navigation }) {
   const [content, setContent] = useState('');
   const [activeTab, setActiveTab] = useState('forYou');
+  const [sidebarVisible, setSidebarVisible] = useState(false);
 
   const handlePost = () => {
     setContent('');
@@ -37,7 +39,7 @@ export default function PostScreen({ navigation }) {
     alert('Ready to create a new post!');
   };
   // MainHeader handlers (replace with real logic as needed)
-  const handleMenu = () => alert('Menu tapped!');
+  const handleMenu = () => setSidebarVisible(true);
   const handleCommunity = () => alert('Community tapped!');
   const handleMessages = () => alert('Messages tapped!');
   const handleNotifications = () => alert('Notifications tapped!');
@@ -59,6 +61,13 @@ export default function PostScreen({ navigation }) {
         onCreatePost={handleCreatePost}
       />
       <Container contentContainerStyle={{ flexGrow: 1 }} />
+      <Sidebar
+        visible={sidebarVisible}
+        onClose={() => setSidebarVisible(false)}
+        onNavigate={(label) => {
+          // TODO: Implement navigation logic here, e.g. navigation.navigate(label)
+        }}
+      />
     </View>
   );
 }

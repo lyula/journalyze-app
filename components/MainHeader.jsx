@@ -16,7 +16,7 @@ export default function MainHeader({ onMenu, onCommunity, onMessages, onNotifica
     <View style={[styles.container, { paddingTop: insets.top }]}>  
       {/* Left: Menu icon */}
       <TouchableOpacity style={styles.iconButton} onPress={onMenu}>
-        <Icon name="bars" size={22} color={GOLD} />
+        <Icon name="bars" size={30} color={GOLD} />
       </TouchableOpacity>
       {/* Center: Title only, moved closer to menu */}
       <View style={styles.centerContainer}>
@@ -61,7 +61,7 @@ const styles = StyleSheet.create({
   centerContainer: {
     flex: 1,
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'flex-end',
     marginLeft: 8,
   },
   title: {
@@ -69,6 +69,7 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: BLUE,
     letterSpacing: 0.5,
+    marginBottom: 2,
   },
   rightContainer: {
     flexDirection: 'row',
