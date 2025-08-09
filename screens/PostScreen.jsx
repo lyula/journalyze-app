@@ -1,6 +1,9 @@
+
 import React, { useState } from 'react';
 import { View, Text, TextInput, Button, ScrollView } from 'react-native';
 import { styled } from 'dripsy';
+import FeedHeader from '../components/FeedHeader.jsx';
+import MainHeader from '../components/MainHeader.jsx';
 
 const Container = styled(ScrollView)({
   flex: 1,
@@ -18,27 +21,44 @@ const Input = styled(TextInput)({
   fontSize: 16,
 });
 
-export default function PostScreen() {
+export default function PostScreen({ navigation }) {
   const [content, setContent] = useState('');
+  const [activeTab, setActiveTab] = useState('forYou');
 
   const handlePost = () => {
-    // TODO: Connect to backend API to create a post
     setContent('');
     alert('Post created!');
   };
+  const handleSearch = () => {
+    alert('Search tapped!');
+  };
+  const handleCreatePost = () => {
+    setContent('');
+    alert('Ready to create a new post!');
+  };
+  // MainHeader handlers (replace with real logic as needed)
+  const handleMenu = () => alert('Menu tapped!');
+  const handleCommunity = () => alert('Community tapped!');
+  const handleMessages = () => alert('Messages tapped!');
+  const handleNotifications = () => alert('Notifications tapped!');
+  const handleProfile = () => alert('Profile tapped!');
 
   return (
-    <Container contentContainerStyle={{ flexGrow: 1, justifyContent: 'center', alignItems: 'center' }}>
-      <Text style={{ fontSize: 24, marginBottom: 24 }}>Create a Post</Text>
-      <Input
-        placeholder="What's on your mind?"
-        value={content}
-        onChangeText={setContent}
-        multiline
-        numberOfLines={4}
-        style={{ height: 100, textAlignVertical: 'top' }}
+    <View style={{ flex: 1, backgroundColor: '#fff' }}>
+      <MainHeader
+        onMenu={handleMenu}
+        onCommunity={handleCommunity}
+        onMessages={handleMessages}
+        onNotifications={handleNotifications}
+        onProfile={handleProfile}
       />
-      <Button title="Post" onPress={handlePost} />
-    </Container>
+      <FeedHeader
+        activeTab={activeTab}
+        setActiveTab={setActiveTab}
+        onSearch={handleSearch}
+        onCreatePost={handleCreatePost}
+      />
+      <Container contentContainerStyle={{ flexGrow: 1 }} />
+    </View>
   );
 }
