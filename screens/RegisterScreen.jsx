@@ -44,7 +44,7 @@ function CountryAutocomplete({ value, setValue, showList, setShowList }) {
         ) : null}
         <TextInput
           style={{ flex: 1, fontSize: 16, color: '#222' }}
-          placeholder="Country"
+          placeholder="Type your country"
           value={query}
           onChangeText={text => {
             setQuery(text);
@@ -136,6 +136,8 @@ export default function RegisterScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirm, setConfirm] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
   const [gender, setGender] = useState('');
   const [dob, setDob] = useState(null);
   const [showDate, setShowDate] = useState(false);
@@ -221,22 +223,40 @@ export default function RegisterScreen() {
         showList={showCountryList}
         setShowList={setShowCountryList}
       />
-      <Input
-        placeholder="Password"
-        value={password}
-        onChangeText={setPassword}
-        secureTextEntry
-        placeholderTextColor="#b3b3b3"
-        onFocus={() => setShowCountryList(false)}
-      />
-      <Input
-        placeholder="Confirm Password"
-        value={confirm}
-        onChangeText={setConfirm}
-        secureTextEntry
-        placeholderTextColor="#b3b3b3"
-        onFocus={() => setShowCountryList(false)}
-      />
+      <View style={{ width: '100%', position: 'relative', marginBottom: 16 }}>
+        <Input
+          placeholder="Password"
+          value={password}
+          onChangeText={setPassword}
+          secureTextEntry={!showPassword}
+          placeholderTextColor="#b3b3b3"
+          onFocus={() => setShowCountryList(false)}
+          style={{ marginBottom: 0 }}
+        />
+        <TouchableOpacity
+          style={styles.showHide}
+          onPress={() => setShowPassword((v) => !v)}
+        >
+          <Text style={{ color: PRIMARY, fontWeight: 'bold' }}>{showPassword ? 'Hide' : 'Show'}</Text>
+        </TouchableOpacity>
+      </View>
+      <View style={{ width: '100%', position: 'relative', marginBottom: 16 }}>
+        <Input
+          placeholder="Confirm Password"
+          value={confirm}
+          onChangeText={setConfirm}
+          secureTextEntry={!showConfirm}
+          placeholderTextColor="#b3b3b3"
+          onFocus={() => setShowCountryList(false)}
+          style={{ marginBottom: 0 }}
+        />
+        <TouchableOpacity
+          style={styles.showHide}
+          onPress={() => setShowConfirm((v) => !v)}
+        >
+          <Text style={{ color: PRIMARY, fontWeight: 'bold' }}>{showConfirm ? 'Hide' : 'Show'}</Text>
+        </TouchableOpacity>
+      </View>
       <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 12, marginTop: 4 }}>
         <Checkbox
           value={acceptedTerms}
@@ -280,5 +300,11 @@ const styles = StyleSheet.create({
     marginBottom: 16,
     backgroundColor: '#f9fafb',
     alignItems: 'flex-start',
+  },
+  showHide: {
+    position: 'absolute',
+    right: 16,
+    top: 16,
+    zIndex: 2,
   },
 });
