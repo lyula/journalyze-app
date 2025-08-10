@@ -209,21 +209,24 @@ const styles = StyleSheet.create({
   badgeRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    // ...existing code...
+    marginLeft: 6,
+    marginTop: 1,
   },
   badgeTimeRow: {
     flexDirection: 'row',
     alignItems: 'center',
   },
   badgeIcon: {
-    width: 16,
-    height: 16,
+    width: 20,
+    height: 20,
     marginRight: 4,
+    marginTop: 77,
   },
   badgeText: {
-    fontSize: 12,
+    fontSize: 13,
     color: '#007AFF',
-    // ...existing code...
+    fontWeight: '500',
+    marginTop: 1,
   },
   dot: {
     fontWeight: 'bold',
