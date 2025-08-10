@@ -1,3 +1,55 @@
+// Utility: Get total comment count (comments + all replies)
+export function getTotalCommentCount(comments) {
+  if (!Array.isArray(comments)) return 0;
+  let count = comments.length;
+  for (const c of comments) {
+    if (Array.isArray(c.replies)) count += c.replies.length;
+  }
+  return count;
+}
+// Get a single post by ID (with comments, likes, replies, etc.)
+export async function getPostById(postId) {
+  const token = await getToken();
+  const res = await fetch(`${API_BASE}/posts/${postId}`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  if (!res.ok) throw new Error('Failed to fetch post');
+  return res.json();
+}
+// Get all comments for a post (for counting on client side)
+export async function getPostComments(postId) {
+  const token = await getToken();
+  const res = await fetch(`${API_BASE}/posts/${postId}/comments`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  if (!res.ok) throw new Error('Failed to fetch post comments');
+  const data = await res.json();
+  // Web expects { comments: [...] } or array
+  if (Array.isArray(data.comments)) return data.comments;
+  if (Array.isArray(data)) return data;
+  // If the response is a single comment, wrap in array
+  if (data && typeof data === 'object') return [data];
+  return [];
+}
+// Get the comments count for a post
+export async function getPostCommentsCount(postId) {
+  const token = await getToken();
+  const res = await fetch(`${API_BASE}/posts/${postId}/comments/count`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  if (!res.ok) throw new Error('Failed to fetch post comments count');
+  const data = await res.json();
+  return data.count || 0;
+}
+// Get users who liked a post
+export async function getPostLikes(postId, limit = 100) {
+  const token = await getToken();
+  const res = await fetch(`${API_BASE}/posts/${postId}/likes?limit=${limit}`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  if (!res.ok) throw new Error('Failed to fetch post likes');
+  return res.json();
+}
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Constants from 'expo-constants';
 

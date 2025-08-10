@@ -1,6 +1,7 @@
 
 import { Video, Audio } from 'expo-av';
 import PostInteractions from './PostInteractions';
+import { getTotalCommentCount } from '../utils/api';
 
 // Test with a different local asset
 const TEST_BADGE = require('../assets/pwa-192x192.png');
@@ -64,12 +65,13 @@ export default function PostCard({ post }) {
       )}
       {/* Content below media */}
       <Text style={styles.content}>{post.content}</Text>
+      {/* Likes count is displayed in PostInteractions, not here */}
       <PostInteractions
         postId={post._id}
         liked={post.liked}
-        likesCount={post.likesCount}
-        commentsCount={post.commentsCount}
+        likesCount={typeof post.likesCount === 'number' ? post.likesCount : (Array.isArray(post.likes) ? post.likes.length : 0)}
         views={post.views}
+        initialCommentsCount={getTotalCommentCount(post.comments)}
         // onCommentPress, onSharePress can be added as needed
       />
     </View>

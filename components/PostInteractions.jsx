@@ -1,22 +1,39 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, TouchableOpacity, Text, ActivityIndicator } from 'react-native';
 import { StyleSheet } from 'react-native';
 import { Ionicons, Feather } from '@expo/vector-icons';
-import { likePost } from '../utils/api';
+import { likePost, getPostComments } from '../utils/api';
+import PostLikesModal from './PostLikesModal';
+import PostComments from './PostComments';
 
 export default function PostInteractions({
   postId,
   liked: likedProp = false,
   likesCount: likesCountProp = 0,
-  commentsCount = 0,
+  commentsCount: initialCommentsCount = 0,
   onCommentPress,
   onSharePress,
   views = 0,
 }) {
   const [liked, setLiked] = useState(likedProp);
   const [likesCount, setLikesCount] = useState(likesCountProp);
+  const [commentsCount, setCommentsCount] = useState(initialCommentsCount);
   const [loading, setLoading] = useState(false);
+  const [showLikesModal, setShowLikesModal] = useState(false);
+  const [showCommentsModal, setShowCommentsModal] = useState(false);
+  useEffect(() => {
+    // Fetch comments count on mount or when postId changes
+    let isMounted = true;
+    getPostComments(postId)
+      .then(comments => {
+        if (isMounted) setCommentsCount(comments.length);
+      })
+      .catch(() => {
+        if (isMounted) setCommentsCount(0);
+      });
+    return () => { isMounted = false; };
+  }, [postId]);
 
   const handleLike = async () => {
     if (loading) return;
@@ -44,8 +61,10 @@ export default function PostInteractions({
               <Ionicons name="heart-outline" size={22} color="#6b7280" />
             )}
           </TouchableOpacity>
-          <Text style={[styles.count, liked && { color: '#e11d48' }]}>{likesCount}</Text>
-          <TouchableOpacity onPress={onCommentPress} style={styles.iconBtn}>
+          <TouchableOpacity onPress={() => setShowLikesModal(true)} disabled={likesCount === 0}>
+            <Text style={[styles.count, liked && { color: '#e11d48' }]}>{likesCount}</Text>
+          </TouchableOpacity>
+          <TouchableOpacity onPress={() => setShowCommentsModal(true)} style={styles.iconBtn}>
             <Feather name="message-circle" size={22} color="#6b7280" />
           </TouchableOpacity>
           <Text style={styles.count}>{commentsCount}</Text>
@@ -58,6 +77,8 @@ export default function PostInteractions({
           <Text style={styles.views}>{views}</Text>
         </View>
       </View>
+      <PostLikesModal visible={showLikesModal} postId={postId} onClose={() => setShowLikesModal(false)} />
+      <PostComments visible={showCommentsModal} postId={postId} onClose={() => setShowCommentsModal(false)} />
     </View>
   );
 }
@@ -89,7 +110,7 @@ const styles = StyleSheet.create({
   left: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
+    gap: 2, // Reduce gap between all icons/counts
   },
   viewsBox: {
     flexDirection: 'row',
@@ -106,7 +127,8 @@ const styles = StyleSheet.create({
   count: {
     fontSize: 15,
     color: '#6b7280',
-    marginHorizontal: 2,
+    marginLeft: 0, // Remove left margin so count is close to icon
+    marginRight: 2, // Minimal space before next icon
     fontWeight: '500',
   },
   views: {
