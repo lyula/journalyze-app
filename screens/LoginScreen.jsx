@@ -61,21 +61,18 @@ const API_BASE =
 
 async function loginUser({ email, password }) {
   try {
-    console.log('[LOGIN] API_BASE:', API_BASE);
     const res = await fetch(`${API_BASE}/auth/login`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ email, password }),
     });
     const text = await res.text();
-    console.log('[LOGIN] Response status:', res.status, 'Body:', text);
     try {
       return JSON.parse(text);
     } catch {
       throw new Error("Server error: " + text);
     }
   } catch (err) {
-    console.error('[LOGIN] Network or fetch error:', err);
     throw err;
   }
 }
@@ -102,12 +99,10 @@ export default function LoginScreen() {
         await AsyncStorage.setItem('token', result.token);
         navigation.replace('Post');
       } else {
-        console.log('[LOGIN] No token, error:', result.message);
         setError(result.message || 'Login failed.');
       }
     } catch (err) {
       setLoading(false);
-      console.error('[LOGIN] handleLogin error:', err);
       setError(err.message || 'Login failed.');
     }
   };

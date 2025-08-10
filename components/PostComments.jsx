@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { View, Text, FlatList, Image, TouchableOpacity, TextInput, ActivityIndicator, StyleSheet, KeyboardAvoidingView, Platform, Modal } from 'react-native';
-import { getPostById, getTotalCommentCount } from '../utils/api';
+import { getPostById, getPostComments, getTotalCommentCount } from '../utils/api';
 import { Ionicons, Feather } from '@expo/vector-icons';
 
 export default function PostComments({ postId, visible, onClose }) {
@@ -29,15 +29,44 @@ export default function PostComments({ postId, visible, onClose }) {
 
   const REPLIES_PER_PAGE = 4;
 
-  const renderReply = (reply) => (
-    <View style={styles.replyRow} key={reply._id}>
-      <Image source={{ uri: reply.author?.profileImage || reply.author?.profile?.profileImage || 'https://cdn-icons-png.flaticon.com/512/149/149071.png' }} style={styles.replyAvatar} />
-      <View style={styles.replyContentBox}>
-        <Text style={styles.replyUsername}>{reply.author?.username || reply.author?.name || 'User'}</Text>
-        <Text style={styles.replyText}>{reply.text || reply.content || ''}</Text>
+  // Robustly extract the profile image from any author object, handling all backend structures
+  // Fallback to DiceBear initials avatar if no image is found
+  const getProfileImage = (author) => {
+    if (!author) return 'https://cdn-icons-png.flaticon.com/512/149/149071.png';
+    if (author.profile && typeof author.profile === 'object' && author.profile.profileImage) return author.profile.profileImage;
+    if (author.profileImage) return author.profileImage;
+    if (typeof author.profile === 'string') return author.profile;
+    // Some backends may return profileImage as a property of a nested profile object
+    if (author.profile && typeof author.profile === 'object' && author.profile.profileImage) return author.profile.profileImage;
+    // Some backends may return profileImage as a property of the author object directly
+    if (author.profileImage) return author.profileImage;
+    // Fallback: show a static default avatar
+    return 'https://cdn-icons-png.flaticon.com/512/149/149071.png';
+  };
+
+  const renderReply = (reply) => {
+    // Log the full reply object for inspection
+    console.log('[REPLY OBJ]', JSON.stringify(reply));
+    const imgUri = getProfileImage(reply.author);
+    return (
+      <View style={styles.replyRow} key={reply._id}>
+        <Image source={{ uri: imgUri }} style={styles.replyAvatar} />
+        <View style={{ flex: 1 }}>
+          <Text style={styles.replyUsername}>{reply.author?.username || reply.author?.name || 'User'}</Text>
+          <Text style={styles.replyText}>{reply.text || reply.content || ''}</Text>
+          <View style={styles.commentActionsRow}>
+            <TouchableOpacity style={styles.likeBtn}>
+              <Ionicons name="heart-outline" size={16} color="#e11d48" />
+              <Text style={styles.likeCount}>{reply.likes?.length || 0}</Text>
+            </TouchableOpacity>
+            <TouchableOpacity onPress={() => handleReply(reply._id)}>
+              <Text style={styles.replyLink}>Reply</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
       </View>
-    </View>
-  );
+    );
+  };
 
   const handleReply = (commentId) => {
     setReplyTo(commentId);
@@ -45,6 +74,8 @@ export default function PostComments({ postId, visible, onClose }) {
   };
 
   const renderComment = ({ item }) => {
+    // Log the full comment object for inspection
+    console.log('[COMMENT OBJ]', JSON.stringify(item));
     const hasReplies = Array.isArray(item.replies) && item.replies.length > 0;
     const shouldShowReplies = showReplies[item._id];
     const replyCount = Array.isArray(item.replies) ? item.replies.length : 0;
@@ -54,9 +85,10 @@ export default function PostComments({ postId, visible, onClose }) {
     const endIdx = startIdx + REPLIES_PER_PAGE;
     const visibleReplies = hasReplies && shouldShowReplies ? item.replies.slice(startIdx, endIdx) : [];
 
+    const imgUri = getProfileImage(item.author);
     return (
       <View style={styles.commentRow}>
-        <Image source={{ uri: item.author?.profileImage || item.author?.profile?.profileImage || 'https://cdn-icons-png.flaticon.com/512/149/149071.png' }} style={styles.avatar} />
+        <Image source={{ uri: imgUri }} style={styles.avatar} />
         <View style={styles.commentContentFlat}>
           <Text style={styles.username}>{item.author?.username || item.author?.name || 'User'}</Text>
           <Text style={styles.commentText}>{item.text || item.content || ''}</Text>
@@ -121,20 +153,16 @@ export default function PostComments({ postId, visible, onClose }) {
   const inputRef = useRef();
 
   useEffect(() => {
-    console.log('[PostComments] useEffect triggered. visible:', visible, 'postId:', postId);
     if (!visible) return;
     setLoading(true);
-    getPostById(postId)
-      .then(post => {
-        console.log('[PostComments] API response for post:', post);
-        setComments(Array.isArray(post?.comments) ? post.comments : []);
+    getPostComments(postId)
+      .then(comments => {
+        setComments(Array.isArray(comments) ? comments : []);
       })
       .catch((err) => {
-        console.log('[PostComments] API error:', err);
         setComments([]);
       })
       .finally(() => {
-        console.log('[PostComments] API call finished');
         setLoading(false);
       });
   }, [visible, postId]);

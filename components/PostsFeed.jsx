@@ -11,7 +11,6 @@ export default function PostsFeed() {
   useEffect(() => {
     fetchPosts()
       .then(data => {
-        console.log('Fetched posts:', JSON.stringify(data, null, 2));
         setPosts(data);
       })
       .catch(e => setError(e.message))

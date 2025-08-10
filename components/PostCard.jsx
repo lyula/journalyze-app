@@ -17,7 +17,6 @@ export default function PostCard({ post }) {
   const username = post.author?.username || post.author?.name || post.author || 'Unknown Author';
   // Only check post.author.verified, matching web logic
   const isVerified = !!post.author?.verified;
-  console.log('PostCard:', { username, isVerified, author: post.author });
   return (
     <View style={styles.card}>
       {/* Author row at the top */}
