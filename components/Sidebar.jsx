@@ -1,7 +1,8 @@
 
 
 import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Modal, Animated, Dimensions, ScrollView } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Modal, Animated, Dimensions, ScrollView, Image } from 'react-native';
+const VERIFIED_BADGE = require('../assets/blue-badge.png');
 import { MaterialCommunityIcons, FontAwesome5, Feather } from '@expo/vector-icons';
 
 const GOLD = '#a99d6b';
@@ -55,9 +56,37 @@ export default function Sidebar({ visible, onClose, onNavigate, user }) {
               {/* User section */}
               <View style={styles.userSection}>
                 <View style={styles.avatarCircle}>
-                  <Feather name="user" size={32} color={BLUE} />
+                  {user?.profile?.profileImage || user?.profile?.avatar || user?.profileImage || user?.avatar ? (
+                    <Image
+                      source={{ uri: user?.profile?.profileImage || user?.profile?.avatar || user?.profileImage || user?.avatar }}
+                      style={{ width: 64, height: 64, borderRadius: 32, resizeMode: 'cover' }}
+                      accessibilityLabel="Profile picture"
+                    />
+                  ) : user?.username ? (
+                    <Image
+                      source={{ uri: `https://api.dicebear.com/7.x/initials/png?seed=${encodeURIComponent(user.username)}` }}
+                      style={{ width: 64, height: 64, borderRadius: 32, resizeMode: 'cover' }}
+                      accessibilityLabel="Profile initials avatar"
+                    />
+                  ) : (
+                    <Feather name="user" size={40} color={BLUE} />
+                  )}
                 </View>
-                <Text style={styles.username} numberOfLines={1}>{user?.username || 'User'}</Text>
+                <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 8 }}>
+                  <Text style={styles.username} numberOfLines={1}>{user?.username || 'User'}</Text>
+                  {user?.verified && (
+                    <Image
+                      source={VERIFIED_BADGE}
+                      style={{ width: 18, height: 18, marginLeft: 4 }}
+                      resizeMode="contain"
+                      accessibilityLabel="Verified badge"
+                    />
+                  )}
+                </View>
+                {/* Email above Update Profile */}
+                {user?.email && (
+                  <Text style={styles.email} numberOfLines={1}>{user.email}</Text>
+                )}
                 <TouchableOpacity
                   style={styles.updateProfileBtn}
                   onPress={() => { onNavigate && onNavigate('UpdateProfile'); onClose(); }}
@@ -65,7 +94,6 @@ export default function Sidebar({ visible, onClose, onNavigate, user }) {
                   <Text style={styles.updateProfileText}>Update Profile</Text>
                 </TouchableOpacity>
                 <View style={styles.hr} />
-                <Text style={styles.email} numberOfLines={1}>{user?.email || ''}</Text>
               </View>
               {/* Links */}
               <View style={styles.menuContainer}>
@@ -157,13 +185,14 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   avatarCircle: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
+    width: 70,
+    height: 70,
+    borderRadius: 50,
     backgroundColor: GOLD,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 10,
+    borderWidth: 0.5,
+    borderColor: '#e0e0e0',
   },
   username: {
     fontSize: 18,
@@ -209,11 +238,11 @@ const styles = StyleSheet.create({
   menuItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 13,
+    paddingVertical: 12,
     width: '100%',
     borderRadius: 10,
     paddingHorizontal: 2,
-    marginBottom: 2,
+    marginBottom: 0,
   },
   iconLabelRow: {
     flexDirection: 'row',

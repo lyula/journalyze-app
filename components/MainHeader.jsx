@@ -1,4 +1,5 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
+import { getProfile } from '../utils/user';
 import { View, Text, TouchableOpacity, Image, StyleSheet } from 'react-native';
 import Icon from 'react-native-vector-icons/FontAwesome';
 import FA5Icon from 'react-native-vector-icons/FontAwesome5';
@@ -10,8 +11,23 @@ const LOGO = require('../assets/icon.png');
 const GOLD = '#a99d6b';
 const BLUE = '#1E3A8A';
 
-export default function MainHeader({ onMenu, onCommunity, onMessages, onNotifications, onProfile }) {
+export default function MainHeader({ onMenu, onCommunity, onMessages, onNotifications, onProfile, onUserLoaded }) {
   const insets = useSafeAreaInsets();
+  const [user, setUser] = useState(null);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const profile = await getProfile();
+        setUser(profile);
+        if (onUserLoaded) onUserLoaded(profile);
+      } catch (err) {
+        setUser(null);
+        if (onUserLoaded) onUserLoaded(null);
+      }
+    })();
+  }, []);
+
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>  
       {/* Left: Menu icon */}

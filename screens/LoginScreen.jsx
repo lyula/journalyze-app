@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, SafeAreaView } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { styled } from 'dripsy';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const PRIMARY = '#a99d6b';
 const PRIMARY_BLUE = '#1E3A8A';
@@ -48,21 +49,67 @@ const Button = styled(TouchableOpacity)({
   marginTop: 8,
 });
 
+
+
+
+import Constants from 'expo-constants';
+const API_BASE =
+  (Constants.manifest?.extra?.API_BASE_URL ||
+   Constants.expoConfig?.extra?.API_BASE_URL ||
+   process.env.API_BASE_URL ||
+   'http://192.168.100.37:5000/api');
+
+async function loginUser({ email, password }) {
+  try {
+    console.log('[LOGIN] API_BASE:', API_BASE);
+    const res = await fetch(`${API_BASE}/auth/login`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, password }),
+    });
+    const text = await res.text();
+    console.log('[LOGIN] Response status:', res.status, 'Body:', text);
+    try {
+      return JSON.parse(text);
+    } catch {
+      throw new Error("Server error: " + text);
+    }
+  } catch (err) {
+    console.error('[LOGIN] Network or fetch error:', err);
+    throw err;
+  }
+}
+
 export default function LoginScreen() {
   const navigation = useNavigation();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
 
-  const handleLogin = () => {
-    // TODO: Connect to backend API
+  const handleLogin = async () => {
     if (!email || !password) {
       setError('Please enter both email and password.');
       return;
     }
     setError('');
-    navigation.replace('Post');
+    setLoading(true);
+    try {
+      const result = await loginUser({ email, password });
+      setLoading(false);
+      if (result.token) {
+        await AsyncStorage.setItem('token', result.token);
+        navigation.replace('Post');
+      } else {
+        console.log('[LOGIN] No token, error:', result.message);
+        setError(result.message || 'Login failed.');
+      }
+    } catch (err) {
+      setLoading(false);
+      console.error('[LOGIN] handleLogin error:', err);
+      setError(err.message || 'Login failed.');
+    }
   };
 
   return (
