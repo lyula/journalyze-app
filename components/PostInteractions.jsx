@@ -17,6 +17,10 @@ export default function PostInteractions({
   views = 0,
 }) {
   const [liked, setLiked] = useState(likedProp);
+  // Sync liked state with prop
+  useEffect(() => {
+    setLiked(likedProp);
+  }, [likedProp]);
   const [likesCount, setLikesCount] = useState(likesCountProp);
   const [commentsCount, setCommentsCount] = useState(initialCommentsCount);
   const [loading, setLoading] = useState(false);

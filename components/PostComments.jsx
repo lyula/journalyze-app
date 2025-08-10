@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react';
+import { useDashboard } from '../context/dashboard';
 import { View, Text, FlatList, Image, TouchableOpacity, TextInput, ActivityIndicator, StyleSheet, KeyboardAvoidingView, Platform, Modal } from 'react-native';
 import { getPostById, getPostComments, getTotalCommentCount } from '../utils/api';
 import { Ionicons, Feather } from '@expo/vector-icons';
@@ -7,6 +8,7 @@ const VERIFIED_BADGE_URI = 'https://zack-lyula-portfolio.vercel.app/images/blue-
 const VERIFIED_BADGE_STYLE = { width: 18, height: 18, marginLeft: 1 };
 
 export default function PostComments({ postId, visible, onClose }) {
+  const { isLikedByUser } = useDashboard();
   // For every 5 comments, show at least one reply by default (if available)
   React.useEffect(() => {
     if (!Array.isArray(comments) || comments.length === 0) return;
@@ -48,10 +50,9 @@ export default function PostComments({ postId, visible, onClose }) {
   };
 
   const renderReply = (reply) => {
-    // Log the full reply object for inspection
-    // console.log('[REPLY OBJ]', JSON.stringify(reply));
     const imgUri = getProfileImage(reply.author);
     const isVerified = reply.author?.verified;
+    const liked = isLikedByUser(reply.likes);
     return (
       <View style={styles.replyRow} key={reply._id}>
         <Image source={{ uri: imgUri }} style={styles.replyAvatar} />
@@ -65,7 +66,7 @@ export default function PostComments({ postId, visible, onClose }) {
           <Text style={styles.replyText}>{reply.text || reply.content || ''}</Text>
           <View style={styles.commentActionsRow}>
             <TouchableOpacity style={styles.likeBtn}>
-              <Ionicons name="heart-outline" size={16} color="#e11d48" />
+              <Ionicons name={liked ? 'heart' : 'heart-outline'} size={16} color={liked ? '#e11d48' : '#e11d48'} />
               <Text style={styles.likeCount}>{reply.likes?.length || 0}</Text>
             </TouchableOpacity>
             <TouchableOpacity onPress={() => handleReply(reply._id)}>
@@ -83,8 +84,6 @@ export default function PostComments({ postId, visible, onClose }) {
   };
 
   const renderComment = ({ item }) => {
-    // Log the full comment object for inspection
-    // console.log('[COMMENT OBJ]', JSON.stringify(item));
     const hasReplies = Array.isArray(item.replies) && item.replies.length > 0;
     const shouldShowReplies = showReplies[item._id];
     const replyCount = Array.isArray(item.replies) ? item.replies.length : 0;
@@ -96,6 +95,7 @@ export default function PostComments({ postId, visible, onClose }) {
 
     const imgUri = getProfileImage(item.author);
     const isVerified = item.author?.verified;
+    const liked = isLikedByUser(item.likes);
     return (
       <View style={styles.commentRow}>
         <Image source={{ uri: imgUri }} style={styles.avatar} />
@@ -109,7 +109,7 @@ export default function PostComments({ postId, visible, onClose }) {
           <Text style={styles.commentText}>{item.text || item.content || ''}</Text>
           <View style={styles.commentActionsRow}>
             <TouchableOpacity style={styles.likeBtn}>
-              <Ionicons name="heart-outline" size={18} color="#e11d48" />
+              <Ionicons name={liked ? 'heart' : 'heart-outline'} size={18} color={liked ? '#e11d48' : '#e11d48'} />
               <Text style={styles.likeCount}>{item.likes?.length || 0}</Text>
             </TouchableOpacity>
             <TouchableOpacity onPress={() => handleReply(item._id)}>

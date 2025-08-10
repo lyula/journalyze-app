@@ -1,48 +1,56 @@
 
+import { useEffect, useState } from 'react';
+import { useDashboard } from '../context/dashboard';
+import FollowButton from './FollowButton';
 import { Video, Audio } from 'expo-av';
 import PostInteractions from './PostInteractions';
 import { getTotalCommentCount } from '../utils/api';
-
-// Test with a different local asset
-const TEST_BADGE = require('../assets/pwa-192x192.png');
-
-
-
+import { getProfile } from '../utils/user';
 import { StyleSheet } from 'react-native';
 import { View, Text, Image } from 'react-native';
-const VERIFIED_BADGE = require('../assets/blue-badge.png');
+import { formatDurationAgo } from '../utils/time';
 
 export default function PostCard({ post }) {
-  const profileImage = post.author?.profile?.profileImage;
-  const username = post.author?.username || post.author?.name || post.author || 'Unknown Author';
-  // Only check post.author.verified, matching web logic
-  const isVerified = !!post.author?.verified;
+  const { isLikedByUser, userId } = useDashboard();
+  const liked = isLikedByUser(post.likes);
   return (
     <View style={styles.card}>
-      {/* Author row at the top */}
-      <View style={{ flexDirection: 'row', alignItems: 'center', width: '100%', marginBottom: 10 }}>
-        {profileImage ? (
+      <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 8 }}>
+        {post.author.profileImage || (post.author.profile && post.author.profile.profileImage) ? (
           <Image
-            source={{ uri: profileImage }}
-            style={styles.profileImage}
-            resizeMode="cover"
+            source={{ uri: post.author.profileImage || post.author.profile?.profileImage }}
+            style={styles.avatar}
           />
         ) : (
-          <MaterialCommunityIcons name="account-circle" size={32} color="#bbb" style={styles.profileImage} />
+          <View style={[styles.avatar, { justifyContent: 'center', alignItems: 'center' }]}> 
+            <Text style={{ color: '#888', fontWeight: 'bold', fontSize: 18 }}>
+              {post.author.username && post.author.username[0] ? post.author.username[0].toUpperCase() : '?'}
+            </Text>
+          </View>
         )}
-        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-          <Text style={styles.author}>{username}</Text>
-          {isVerified && (
-            <Image
-              source={{ uri: 'https://zack-lyula-portfolio.vercel.app/images/blue-badge.png' }}
-              style={{ width: 18, height: 18, marginLeft: 4 }}
-              resizeMode="contain"
-              accessibilityLabel="Verified badge"
-            />
-          )}
+        <View style={{ flex: 1 }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+            <Text style={styles.author}>{post.author.username}</Text>
+            {post.author.verified && (
+              <Image source={require('../assets/blue-badge.png')} style={{ width: 16, height: 16, marginLeft: 4 }} />
+            )}
+            {post.author.badge && (
+              <View style={styles.badgeRow}>
+                <Image source={{ uri: post.author.badge.icon }} style={styles.badgeIcon} />
+                <Text style={styles.badgeText}>{post.author.badge.name}</Text>
+              </View>
+            )}
+            {/* Dot between badge/verified and time */}
+            {(post.author.badge || post.author.verified) && (
+              <Text style={styles.dot}> • </Text>
+            )}
+            <Text style={styles.time}>{formatDurationAgo(post.createdAt)}</Text>
+          </View>
         </View>
+        {!post.author.isFollowedByMe && (
+          <FollowButton userId={post.author._id || post.author.id} />
+        )}
       </View>
-      {/* Media (image, video, audio) */}
       {post.image && (
         <Image source={{ uri: post.image }} style={styles.image} resizeMode="cover" />
       )}
@@ -62,27 +70,25 @@ export default function PostCard({ post }) {
           shouldPlay={false}
         />
       )}
-      {/* Content below media */}
       <Text style={styles.content}>{post.content}</Text>
-      {/* Likes count is displayed in PostInteractions, not here */}
       <PostInteractions
         postId={post._id}
-        liked={post.liked}
+        liked={liked}
         likesCount={typeof post.likesCount === 'number' ? post.likesCount : (Array.isArray(post.likes) ? post.likes.length : 0)}
         views={post.views}
         initialCommentsCount={getTotalCommentCount(post.comments)}
-        // onCommentPress, onSharePress can be added as needed
       />
     </View>
   );
 }
+// ...existing code...
 
 const styles = StyleSheet.create({
-  profileImage: {
-    width: 26,
-    height: 26,
-    borderRadius: 13,
-    marginRight: 4,
+  avatar: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    marginRight: 8,
     backgroundColor: '#eee',
   },
   card: {
@@ -127,5 +133,40 @@ const styles = StyleSheet.create({
     paddingHorizontal: 0,
     paddingBottom: 8,
     // width removed
+  },
+  badgeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    // ...existing code...
+  },
+  badgeTimeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  badgeIcon: {
+    width: 16,
+    height: 16,
+    marginRight: 4,
+  },
+  badgeText: {
+    fontSize: 12,
+    color: '#007AFF',
+    // ...existing code...
+  },
+  dot: {
+    fontWeight: 'bold',
+    color: '#888',
+    fontSize: 14,
+    marginHorizontal: 4,
+  },
+  time: {
+    fontSize: 12,
+    color: '#888',
+    // ...existing code...
+  },
+  footer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    // ...existing code...
   },
 });
