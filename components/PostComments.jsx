@@ -2,6 +2,9 @@ import React, { useEffect, useState, useRef } from 'react';
 import { View, Text, FlatList, Image, TouchableOpacity, TextInput, ActivityIndicator, StyleSheet, KeyboardAvoidingView, Platform, Modal } from 'react-native';
 import { getPostById, getPostComments, getTotalCommentCount } from '../utils/api';
 import { Ionicons, Feather } from '@expo/vector-icons';
+// Use the exact badge URI and style as post author badge
+const VERIFIED_BADGE_URI = 'https://zack-lyula-portfolio.vercel.app/images/blue-badge.png';
+const VERIFIED_BADGE_STYLE = { width: 18, height: 18, marginLeft: 1 };
 
 export default function PostComments({ postId, visible, onClose }) {
   // For every 5 comments, show at least one reply by default (if available)
@@ -46,13 +49,19 @@ export default function PostComments({ postId, visible, onClose }) {
 
   const renderReply = (reply) => {
     // Log the full reply object for inspection
-    console.log('[REPLY OBJ]', JSON.stringify(reply));
+    // console.log('[REPLY OBJ]', JSON.stringify(reply));
     const imgUri = getProfileImage(reply.author);
+    const isVerified = reply.author?.verified;
     return (
       <View style={styles.replyRow} key={reply._id}>
         <Image source={{ uri: imgUri }} style={styles.replyAvatar} />
         <View style={{ flex: 1 }}>
-          <Text style={styles.replyUsername}>{reply.author?.username || reply.author?.name || 'User'}</Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+            <Text style={styles.replyUsername}>{reply.author?.username || reply.author?.name || 'User'}</Text>
+            {isVerified && (
+              <Image source={{ uri: VERIFIED_BADGE_URI }} style={VERIFIED_BADGE_STYLE} resizeMode="contain" accessibilityLabel="Verified badge" />
+            )}
+          </View>
           <Text style={styles.replyText}>{reply.text || reply.content || ''}</Text>
           <View style={styles.commentActionsRow}>
             <TouchableOpacity style={styles.likeBtn}>
@@ -75,7 +84,7 @@ export default function PostComments({ postId, visible, onClose }) {
 
   const renderComment = ({ item }) => {
     // Log the full comment object for inspection
-    console.log('[COMMENT OBJ]', JSON.stringify(item));
+    // console.log('[COMMENT OBJ]', JSON.stringify(item));
     const hasReplies = Array.isArray(item.replies) && item.replies.length > 0;
     const shouldShowReplies = showReplies[item._id];
     const replyCount = Array.isArray(item.replies) ? item.replies.length : 0;
@@ -86,11 +95,17 @@ export default function PostComments({ postId, visible, onClose }) {
     const visibleReplies = hasReplies && shouldShowReplies ? item.replies.slice(startIdx, endIdx) : [];
 
     const imgUri = getProfileImage(item.author);
+    const isVerified = item.author?.verified;
     return (
       <View style={styles.commentRow}>
         <Image source={{ uri: imgUri }} style={styles.avatar} />
         <View style={styles.commentContentFlat}>
-          <Text style={styles.username}>{item.author?.username || item.author?.name || 'User'}</Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+            <Text style={styles.username}>{item.author?.username || item.author?.name || 'User'}</Text>
+            {isVerified && (
+              <Image source={{ uri: VERIFIED_BADGE_URI }} style={VERIFIED_BADGE_STYLE} resizeMode="contain" accessibilityLabel="Verified badge" />
+            )}
+          </View>
           <Text style={styles.commentText}>{item.text || item.content || ''}</Text>
           <View style={styles.commentActionsRow}>
             <TouchableOpacity style={styles.likeBtn}>
