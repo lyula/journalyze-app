@@ -30,6 +30,7 @@ export default function PostCard({ post }) {
   const [menuVisible, setMenuVisible] = useState(false);
   const [menuAnchor, setMenuAnchor] = useState({ x: 0, y: 0 });
   const menuIconRef = useRef(null);
+  const [showFullText, setShowFullText] = useState(false);
 
   // Dummy handlers for edit/delete (replace with real logic)
   const handleEdit = () => {
@@ -128,14 +129,28 @@ export default function PostCard({ post }) {
         <Image source={{ uri: post.image }} style={styles.image} resizeMode="cover" />
       )}
       {post.video && (
-        <Video
-          source={{ uri: post.video }}
-          style={styles.video}
-          useNativeControls
-          resizeMode="contain"
-          shouldPlay={false}
-          isLooping={false}
-        />
+        <View
+          style={[
+            styles.videoContainer,
+            post.videoMeta && post.videoMeta.height > post.videoMeta.width
+              ? styles.videoContainerPortrait
+              : styles.videoContainerLandscape,
+          ]}
+        >
+          <Video
+            source={{ uri: post.video }}
+            style={[
+              styles.video,
+              post.videoMeta && post.videoMeta.height > post.videoMeta.width
+                ? styles.videoPortrait
+                : styles.videoLandscape,
+            ]}
+            useNativeControls
+            resizeMode={post.videoMeta && post.videoMeta.height > post.videoMeta.width ? 'contain' : 'cover'}
+            shouldPlay={false}
+            isLooping={false}
+          />
+        </View>
       )}
       {post.audio && (
         <Audio.Sound
@@ -143,7 +158,16 @@ export default function PostCard({ post }) {
           shouldPlay={false}
         />
       )}
-      <Text style={styles.content}>{post.content}</Text>
+      <Text style={styles.content} numberOfLines={showFullText ? undefined : 3} ellipsizeMode="tail">
+        {post.content}
+      </Text>
+      {post.content && post.content.length > 120 && (
+        <TouchableOpacity onPress={() => setShowFullText(v => !v)}>
+          <Text style={styles.readMoreLess}>
+            {showFullText ? 'Read less' : 'Read more'}
+          </Text>
+        </TouchableOpacity>
+      )}
       <PostInteractions
         postId={post._id}
         liked={liked}
@@ -181,15 +205,42 @@ const styles = StyleSheet.create({
   },
   image: {
     width: '100%',
-    height: 380, // even taller for less cropping
+    height: 380,
     borderRadius: 0,
     marginBottom: 0,
   },
+  videoContainer: {
+    width: '100%',
+    backgroundColor: '#000',
+    borderRadius: 0,
+    marginBottom: 0,
+    overflow: 'hidden',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  videoContainerLandscape: {
+    aspectRatio: 16 / 9,
+  },
+  videoContainerPortrait: {
+    // No forced aspect ratio for tall videos, just constrain maxHeight
+    maxHeight: 500,
+    alignSelf: 'stretch',
+  },
   video: {
     width: '100%',
-    height: 380,
     backgroundColor: '#000',
     marginBottom: 0,
+    height: undefined,
+  },
+  videoLandscape: {
+    aspectRatio: 16 / 9,
+    height: undefined,
+  },
+  videoPortrait: {
+    // No forced aspect ratio, let video be tall
+    height: undefined,
+    maxHeight: 500,
+    alignSelf: 'stretch',
   },
   author: {
     fontSize: 18,
@@ -200,11 +251,20 @@ const styles = StyleSheet.create({
     // width removed to allow inline badge
   },
   content: {
-    fontSize: 16,
+    fontSize: 14.5, // Instagram-like compact font
     color: '#222',
     paddingHorizontal: 0,
     paddingBottom: 8,
-    // width removed
+    lineHeight: 20,
+  },
+  readMoreLess: {
+    color: '#888',
+    fontSize: 14,
+    marginTop: -4,
+    marginBottom: 8,
+    fontWeight: '500',
+    alignSelf: 'flex-start',
+    paddingHorizontal: 0,
   },
   badgeRow: {
     flexDirection: 'row',

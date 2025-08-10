@@ -1,21 +1,70 @@
-import React, { useEffect, useState } from 'react';
-import { View, FlatList, ActivityIndicator, Text, Image, TouchableOpacity } from 'react-native';
-import { StyleSheet } from 'react-native';
 
 import { fetchProfileSuggestions } from '../utils/api';
 import BlueBadge from './BlueBadge';
+import { getProfile } from '../utils/user';
+
+function getProfileImage(user) {
+  if (!user) return '';
+  if (user.profile && typeof user.profile === 'object' && user.profile.profileImage) return user.profile.profileImage;
+  if (user.profileImage) return user.profileImage;
+  if (typeof user.profile === 'string') return user.profile;
+  if (user.profileImage) return user.profileImage;
+  return '';
+}
+
+import React, { useEffect, useState } from 'react';
 
 export default function ProfileSuggestions() {
   const [profiles, setProfiles] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [dismissed, setDismissed] = useState(() => {
+    try {
+      const stored = globalThis.localStorage?.getItem('dismissedSuggestions');
+      return stored ? JSON.parse(stored) : [];
+    } catch {
+      return [];
+    }
+  });
+  const [following, setFollowing] = useState([]);
 
+  // Fetch current user and following list
   useEffect(() => {
+    getProfile().then(user => {
+      setFollowing(user.followingRaw || []);
+    });
+  }, []);
+
+  // Fetch suggestions
+  useEffect(() => {
+    setLoading(true);
     fetchProfileSuggestions()
-      .then(setProfiles)
+      .then(data => {
+        let suggestions = Array.isArray(data.suggestions) ? data.suggestions : data;
+        suggestions = suggestions.filter(s => !following.includes(s._id) && !dismissed.includes(s._id));
+        suggestions.sort((a, b) => {
+          const aHasImage = !!getProfileImage(a);
+          const bHasImage = !!getProfileImage(b);
+          if (aHasImage && !bHasImage) return -1;
+          if (!aHasImage && bHasImage) return 1;
+          if (a.verified && !b.verified) return -1;
+          if (!a.verified && b.verified) return 1;
+          return 0;
+        });
+        setProfiles(suggestions);
+      })
       .catch(e => setError(e.message))
       .finally(() => setLoading(false));
-  }, []);
+  }, [dismissed, following]);
+
+  // Persist dismissed users
+  useEffect(() => {
+    try {
+      globalThis.localStorage?.setItem('dismissedSuggestions', JSON.stringify(dismissed));
+    } catch {}
+  }, [dismissed]);
+
+  const handleDismiss = (id) => setDismissed(prev => [...prev, id]);
 
   if (loading) return <ActivityIndicator size="small" style={{ marginTop: 16 }} />;
   if (error) return <Text style={{ color: 'red', margin: 16 }}>{error}</Text>;
@@ -28,8 +77,8 @@ export default function ProfileSuggestions() {
         data={profiles}
         keyExtractor={item => item._id}
         renderItem={({ item }) => (
-          <TouchableOpacity style={styles.profileCard}>
-            {item.profileImage && <Image source={{ uri: item.profileImage }} style={styles.profileImage} />}
+          <View style={styles.profileCard}>
+            {getProfileImage(item) ? <Image source={{ uri: getProfileImage(item) }} style={styles.profileImage} /> : null}
             <View style={{ marginLeft: 10 }}>
               <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                 <Text style={styles.username}>{item.username}</Text>
@@ -37,7 +86,10 @@ export default function ProfileSuggestions() {
               </View>
               {item.bio && <Text style={styles.bio}>{item.bio}</Text>}
             </View>
-          </TouchableOpacity>
+            <TouchableOpacity onPress={() => handleDismiss(item._id)} style={{ position: 'absolute', top: 6, right: 6, padding: 4 }}>
+              <Text style={{ color: '#aaa', fontSize: 16 }}>×</Text>
+            </TouchableOpacity>
+          </View>
         )}
         horizontal
         showsHorizontalScrollIndicator={false}
